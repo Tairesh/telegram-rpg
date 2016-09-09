@@ -1,0 +1,4 @@
+
+name = 'Колчан'
+
+isContainer = True
