@@ -363,7 +363,7 @@ def button_inventory(bot, update, user):
 	if command == 'putconfirm':
 		item2Id = int(secondArgument)
 		item.itemId = item2Id
-		bot.editMessageReplyMarkup(reply_markup = inventory_keyboard(user, item2Id),chat_id=user.id,message_id=query.message.message_id)		
+		bot.editMessageText(text = 'Ваш инвентарь:', reply_markup = inventory_keyboard(user, item2Id),chat_id=user.id,message_id=query.message.message_id)		
 		return
 	if command == 'drop':
 		bot.editMessageText(text = 'Вы посмотрели свой инвентарь', chat_id=user.id, message_id=query.message.message_id)
@@ -377,7 +377,7 @@ def button_inventory(bot, update, user):
 		item.drop()
 
 		bot.editMessageText(text = 'Вы выбросили '+item.getName(), chat_id=user.id, message_id=query.message.message_id)
-		bot.sendMessage(text = 'Ваш инвентарь', reply_markup = inventory_keyboard(user, back),chat_id=user.id,message_id=query.message.message_id)
+		bot.sendMessage(text = 'Ваш инвентарь:', reply_markup = inventory_keyboard(user, back),chat_id=user.id,message_id=query.message.message_id)
 	if command == 'makeaction':
 		user.currentState = user.prevState
 		bot.editMessageText(text = 'Вы посмотрели свой инвентарь', chat_id=user.id, message_id=query.message.message_id)
@@ -386,7 +386,7 @@ def button_inventory(bot, update, user):
 		return what_next(bot, user)
 
 	if command == 'actioncancel':
-		bot.editMessageText(text = 'Ваш инвентарь', reply_markup = inventory_keyboard(user, item.itemId),chat_id=user.id,message_id=query.message.message_id)		
+		bot.editMessageText(text = 'Ваш инвентарь:', reply_markup = inventory_keyboard(user, item.itemId),chat_id=user.id,message_id=query.message.message_id)		
 		return
 
 	if command == 'close':
@@ -1042,19 +1042,41 @@ def select_special_action(bot, update, user):
 def make_butchering(bot, update, user):
 	query = update.callback_query
 
-	keyboard = []
-	i = 0
-	for item in [item for item in user.items if item.isButcherable()]:
-		if i % 2:
-			keyboard[i // 2].append(InlineKeyboardButton(item.getName(), callback_data = 'item:'+str(item.id)))
-		else:
-			keyboard.append([InlineKeyboardButton(item.getName(), callback_data = 'item:'+str(item.id))])
-		i += 1
+	butcherableItems = [item for item in user.items if item.isButcherable()]
 
-	if len(keyboard) == 0:
+	if len(butcherableItems) == 0:
 		user.currentState = user.prevState
 		bot.sendMessage(text = 'У вас нет трупов для разделки', chat_id=user.id, reply_markup = standart_keyboard(user))
 		return
+
+	filteredItemsButtons = []
+
+	i = 0
+	itemTypes = {}
+	for item in butcherableItems:
+		if item.isStackable() and item.protoId in itemTypes:
+			pos, count = itemTypes[item.protoId]
+			count += 1
+
+			filteredItemsButtons[pos] = InlineKeyboardButton(item.getName()+' ('+str(count)+')', callback_data = 'item:'+str(item.id))
+		else:
+			count = 1
+			i += 1
+
+			filteredItemsButtons.append(InlineKeyboardButton(item.getName(), callback_data = 'item:'+str(item.id)))
+
+		itemTypes[item.protoId] = (i-1, count)
+
+
+	keyboard = []
+
+	i = 0
+	for button in filteredItemsButtons:
+		if i % 2:
+			keyboard[i // 2].append(button)
+		else:
+			keyboard.append([button])
+		i += 1
 
 	keyboard.append([InlineKeyboardButton('Отмена', callback_data = 'cancel')])
 

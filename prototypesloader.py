@@ -131,7 +131,8 @@ def check_ability(ability, name):
 
 TRADERS_FILES = {
 	1: 'weapon',
-	2: 'food'
+	2: 'food',
+	3: 'cloth'
 }
 
 def load_trader(id):

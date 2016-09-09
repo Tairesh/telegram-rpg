@@ -482,7 +482,7 @@ class MarketPlace(Location):
 		return (1,)
 
 	def getTraders(self):
-		return (1,2)
+		return (1,2,3)
 		
 
 LOCATION_CLASSES = {
