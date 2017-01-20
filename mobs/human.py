@@ -7,6 +7,7 @@ dx = 10
 iq = 10
 ht = 10
 hpMax = 10
+mpMax = 10
 
 abilities = (1,2,3)
 

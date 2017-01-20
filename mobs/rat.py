@@ -7,6 +7,7 @@ dx = 15
 iq = 0
 ht = 5
 hpMax = 2
+mpMax = 0
 
 abilities = (3, )
 

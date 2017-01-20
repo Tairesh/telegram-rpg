@@ -74,7 +74,13 @@ SKILL_NAMES = OrderedDict([
 	['kick', 'Пинание'],
 	['arch', 'Прицеливание'],
 	['fight', 'Рукопашный бой'],
-	['dodge', 'Уклонение']
+	['dodge', 'Уклонение'],
+	['fire', 'Огонь'],
+	['water', 'Вода'],
+	['air', 'Воздух'],
+	['ground', 'Земля'],
+	['dark', 'Тьма'],
+	['light', 'Свет'],
 ])
 
 ACTION_OPEN_INVENTORY = 'Открыть инвентарь'
@@ -86,6 +92,10 @@ ACTION_ATTACK = 'Атаковать'
 ACTION_MAKE_SPECIAL_ACTION = 'Другие действия'
 ACTION_TRADE = 'Торговать'
 ACTION_RESTART = 'Начать заново'
+
+EAT = 'Съесть'
+DRINK = 'Выпить'
+READ = 'Прочитать'
 
 SPECIAL_ACTION_BUTCHERING = 'Разделать труп'
 SPECIAL_ACTION_SAY = 'Сказать что-то'

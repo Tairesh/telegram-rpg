@@ -18,6 +18,8 @@ ITEMS_PROTOTYPES_FILES = {
 	17: 'blowgun',
 	18: 'crossbow',
 
+	20: 'staff',
+
 	4: 'arrow',
 	24: 'bolt',
 	34: 'dart',
@@ -26,6 +28,12 @@ ITEMS_PROTOTYPES_FILES = {
 	6: 'backpack',
 
 	5: 'worldmap',
+
+	50: 'emptybutle',
+	51: 'hppotion',
+	52: 'mppotion',
+
+	300: 'scrollfireshit',
 
 	101: 'deadhuman',
 	102: 'deadrat',
@@ -38,12 +46,14 @@ ITEMS_PROTOTYPES_FILES = {
 def load_item_prototype(id):
 
 	if not id in ITEMS_PROTOTYPES_FILES:
+		logger.warn('Item #{0} not found'.format(id))
 		return None
 
 	name = ITEMS_PROTOTYPES_FILES[id]
 	path = 'items/{0}.py'.format(name)
 
 	if not os.path.exists(path):
+		logger.warn('Item #{0} ({1}) not found'.format(id, name))
 		return None
 
 	item_loader = SourceFileLoader(name, path)
@@ -83,7 +93,9 @@ def check_item_prototype(item, name):
 ABILITES_FILES = {
 	1: 'punch',
 	2: 'kick',
-	3: 'bite'
+	3: 'bite',
+	4: 'fireball',
+	5: 'fireshit'
 }
 
 def load_ability(id):
@@ -116,9 +128,10 @@ def check_ability(ability, name):
 	defaults = [
 		( lambda *args: 0, ( 'getDamage', )),
 		( lambda *args: None, ( 'afterAttack', )),
+		( lambda *args: True, ( 'isCanAttack', )),
+		( lambda *args: False, ( 'isNatural', )),
 		( None, ( 'usingAttribute', )),
 		( (), ( 'usingSkills', )),
-		( True, ( 'isNatural', ))
 	]
 
 	for def_val, names in defaults:
@@ -132,7 +145,8 @@ def check_ability(ability, name):
 TRADERS_FILES = {
 	1: 'weapon',
 	2: 'food',
-	3: 'cloth'
+	3: 'cloth',
+	4: 'potion'
 }
 
 def load_trader(id):
@@ -221,7 +235,7 @@ def load_mob_prototype(id):
 def check_mob(mob, name):
 	mob.code_name = name
 
-	required = ( 'name', 'st', 'dx', 'iq', 'ht', 'hpMax' )
+	required = ( 'name', 'st', 'dx', 'iq', 'ht', 'hpMax', 'mpMax' )
 
 	for r in required:
 		if not hasattr(mob, r):

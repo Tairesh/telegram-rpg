@@ -1,6 +1,6 @@
 from sqlobject import *
 from consts import *
-from prototypesloader import load_item_prototype, load_trader, load_mob_prototype
+from prototypesloader import load_item_prototype, load_trader, load_mob_prototype, load_ability
 
 sqlhub.processConnection = connectionForURI('sqlite:/home/ilya/telegram-rpg/database.sqlite')
 
@@ -41,8 +41,17 @@ class User(SQLObject):
 	locationId = IntCol(default = 1)
 	hp = IntCol(default = 10)
 	hpMax = IntCol(default = 10)
+	mp = IntCol(default=10)
+	mpMax = IntCol(default=10)
+	fire = FloatCol(default=0)
+	water = FloatCol(default=0)
+	air = FloatCol(default=0)
+	ground = FloatCol(default=0)
+	dark = FloatCol(default=0)
+	light = FloatCol(default=0)
 	attackMobId = IntCol(default = None)
 	items = MultipleJoin('Item')
+	spells = MultipleJoin('Spell')
 
 	levelsExp = {
 		1: 0,
@@ -110,6 +119,12 @@ class User(SQLObject):
 			'arch': self.arch,
 			'fight': self.fight,
 			'dodge': self.dodge,
+			'fire': self.fire,
+			'water': self.water,
+			'air': self.air,
+			'ground': self.ground,
+			'dark': self.dark,
+			'light': self.light,
 		}[skill]
 
 	def afterUsingSkill(self, skill):
@@ -152,6 +167,18 @@ class User(SQLObject):
 			self.fight += increment
 		elif skill == 'dodge':
 			self.dodge += increment
+		elif skill == 'fire':
+			self.fire += increment
+		elif skill == 'water':
+			self.water += increment
+		elif skill == 'air':
+			self.air += increment
+		elif skill == 'ground':
+			self.ground += increment
+		elif skill == 'dark':
+			self.dark += increment
+		elif skill == 'light':
+			self.light += increment
 
 
 	def setSkillValue(self, skill, val):
@@ -191,6 +218,18 @@ class User(SQLObject):
 			self.fight = val
 		elif skill == 'dodge':
 			self.dodge = val
+		elif skill == 'fire':
+			self.fire = val
+		elif skill == 'water':
+			self.water = val
+		elif skill == 'air':
+			self.air = val
+		elif skill == 'ground':
+			self.ground = val
+		elif skill == 'dark':
+			self.dark = val
+		elif skill == 'light':
+			self.light = val
 
 	def getAttributeValue(self, attr):
 		return {
@@ -243,7 +282,7 @@ class User(SQLObject):
 
 	def getAbilities(self):
 		if self.race:
-			return self.race.abilities
+			return [load_ability(a) for a in self.race.abilities] + [spell.prototype for spell in self.spells]
 		else:
 			return ()
 
@@ -291,6 +330,14 @@ class User(SQLObject):
 			'dodge': self.dodge,
 			'hp': self.hp,
 			'hpMax': self.hpMax,
+			'mp': self.mp,
+			'mpMax': self.mpMax,
+			'fire': self.fire,
+			'water': self.water,
+			'air': self.air,
+			'ground': self.ground,
+			'dark': self.dark,
+			'light': self.light,
 			'locationId': self.locationId,
 			'items': [item.serialize() for item in self.items]
 		}
@@ -482,7 +529,7 @@ class MarketPlace(Location):
 		return (1,)
 
 	def getTraders(self):
-		return (1,2,3)
+		return (1,2,3,4)
 		
 
 LOCATION_CLASSES = {
@@ -519,6 +566,14 @@ class Mob(SQLObject):
 	dodge = FloatCol(default = 0)
 	hp = IntCol(default=10)
 	hpMax = IntCol(default=10)
+	mp = IntCol(default=10)
+	mpMax = IntCol(default=10)
+	fire = FloatCol(default=0)
+	water = FloatCol(default=0)
+	air = FloatCol(default=0)
+	ground = FloatCol(default=0)
+	dark = FloatCol(default=0)
+	light = FloatCol(default=0)
 	items = MultipleJoin('Item')
 
 	def _init(self, *args, **kw):
@@ -533,6 +588,8 @@ class Mob(SQLObject):
 		mob.ht = mob.prototype.ht
 		mob.hpMax = mob.prototype.hpMax
 		mob.hp = mob.hpMax
+		mob.mpMax = mob.prototype.mpMax
+		mob.mp = mob.mpMax
 		return mob
 
 	def getName(self):
@@ -561,7 +618,7 @@ class Mob(SQLObject):
 
 	def getAbilities(self):
 		if (self.prototype):
-			return self.prototype.abilities
+			return [load_ability(a) for a in self.prototype.abilities]
 		return ()
 
 	def getAttributeValue(self, attr):
@@ -592,4 +649,29 @@ class Mob(SQLObject):
 			'arch': self.arch,
 			'fight': self.fight,
 			'dodge': self.dodge,
+			'fire': self.fire,
+			'water': self.water,
+			'air': self.air,
+			'ground': self.ground,
+			'dark': self.dark,
+			'light': self.light,
 		}[skill]
+
+
+class Spell(SQLObject):
+	protoId = IntCol()
+	userId = IntCol()
+
+	def _init(self, *args, **kw):
+		SQLObject._init(self, *args, **kw)
+		self.prototype = load_ability(self.protoId)
+
+	def getName(self):
+		if self.prototype:
+			return self.prototype.name
+		return 'Поебень какая-то'
+
+	def getDamage(self):
+		if self.prototype:
+			return self.prototype.getDamage(User.get(self.userId))
+		return 0

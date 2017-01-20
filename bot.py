@@ -38,7 +38,7 @@ def create_keyboard(actions = [], autoformat = True):
 	else:
 		return ReplyKeyboardHide()
 
-def line_bar(n, start, end, fill = ':', empty = '.', length = 25):
+def line_bar(n, start, end, fill = ':', empty = '.', length = 20):
 
 	distance = end - start
 	i = distance / length
@@ -139,7 +139,7 @@ def input_nick(bot, update, user):
 			return
 		user.name = update.message.text
 		user.currentState = STATE_WAITING_INPUT_RACE
-		bot.sendMessage(user.id, "Привет, "+user.name+"! Выбери расу своего персонажа", reply_markup = create_keyboard([race.name for race in AVAILABLE_RACES]))
+		bot.sendMessage(user.id, "Привет, "+user.name+"! Выбери расу своего персонажа", reply_markup = create_keyboard([[race.name for race in AVAILABLE_RACES]], False))
 	else:
 		user.currentState = STATE_WAITING_INPUT_NICK
 		bot.sendMessage(user.id, "Введите ник", reply_markup = create_keyboard())
@@ -155,7 +155,7 @@ def input_race(bot, update, user):
 				bot.sendMessage(user.id, "Выбери свой пол", reply_markup = create_keyboard([[GENDER_MALE, GENDER_FEMALE]], False))
 				return
 
-	bot.sendMessage(user.id, "Выбери расу своего персонажа", reply_markup = create_keyboard([race.name for race in AVAILABLE_RACES]))
+	bot.sendMessage(user.id, "Выбери расу своего персонажа", reply_markup = create_keyboard([[race.name for race in AVAILABLE_RACES]], False))
 
 
 def input_gender(bot, update, user):
@@ -209,6 +209,8 @@ def input_attributes(bot, update, user):
 	user.ht = race.ht
 	user.hpMax = race.hpMax
 	user.hp = race.hpMax
+	user.mpMax = race.mpMax
+	user.mp = race.mpMax
 	user.pointsLost = 5
 	bot.sendMessage(user.id, "Распредели стартовые очки по аттрибутам", reply_markup = attributes_keyboard(user))
 
@@ -254,24 +256,81 @@ def button_attributes(bot, update, user):
 
 	bot.editMessageReplyMarkup(reply_markup = attributes_keyboard(user),chat_id=user.id,message_id=query.message.message_id)
 
+def input_weapon_keyboard(user):
+	if user.raceId == 4:
+		return create_keyboard([['Арбалетчик', 'Топорщик', 'Молотобоец'], ['Маг огня', 'Маг земли', 'Маг тьмы']], False)
+	elif user.raceId == 3:
+		return create_keyboard([['Лучник', 'Мечник', 'Пикенёр'], ['Маг воды', 'Маг земли', 'Маг света']], False)
+	elif user.raceId == 1:
+		return create_keyboard([['Мечник', 'Булавоносец', 'Топорщик'], ['Лучник', 'Арбалетчик', 'Метатель'], ['Маг воздуха', 'Маг воды', 'Маг земли'], ['Маг огня', 'Маг тьмы', 'Маг света']], False)
+
 def input_weapon(bot, update, user):
 
-	if user.currentState == STATE_WAITING_INPUT_WEAPON and update.message.text and update.message.text in (WEAPON_BOW, WEAPON_SWORD):
-		if update.message.text == WEAPON_SWORD:
-			user.sword += 1
-			user.addItem(WEAPON_SWORD_ID)
-		elif update.message.text == WEAPON_BOW:
+	if user.currentState == STATE_WAITING_INPUT_WEAPON and update.message.text:
+
+		reply = update.message.text
+
+		if reply == 'Арбалетчик':
+			user.crossbow += 1
+			user.arch += 1
+			user.addItem(18)
+			q = user.addItem(3) # колчан
+			for i in range(0,30):
+				user.addItem(24, q)
+		elif reply == 'Топорщик':
+			user.axe += 1
+			user.fight += 1
+			user.addItem(10)
+		elif reply == 'Молотобоец':
+			user.hammer += 1
+			user.fight += 1
+			user.addItem(11)
+		elif reply == 'Лучник':
 			user.bow += 1
+			user.arch += 1
 			user.addItem(WEAPON_BOW_ID)
 			q = user.addItem(3) # колчан
 			for i in range(0,30):
 				user.addItem(4, q)
+		elif reply == 'Мечник':
+			user.sword += 1
+			user.fight += 1
+			user.addItem(WEAPON_SWORD_ID)
+		elif reply == 'Пикенёр':
+			user.pike += 1
+			user.fight += 1
+			user.addItem(14)
+		elif reply == 'Булавоносец':
+			user.mace += 1
+			user.fight += 1
+			user.addItem(13)
+		elif reply == 'Маг огня':
+			user.fire += 1
+			user.addItem(20) # посох
+			Spell(userId = user.id, protoId = 4)
+		elif reply == 'Маг земли':
+			user.ground += 1
+			user.addItem(20) # посох
+		elif reply == 'Маг воды':
+			user.water += 1
+			user.addItem(20) # посох
+		elif reply == 'Маг воздуха':
+			user.air += 1
+			user.addItem(20) # посох
+		elif reply == 'Маг тьмы':
+			user.dark += 1
+			user.addItem(20) # посох
+		elif reply == 'Маг света':
+			user.light += 1
+			user.addItem(20) # посох
+		else:
+			bot.sendMessage(user.id, "Выбери стартовый класс", reply_markup = input_weapon_keyboard(user))
 
 		user.currentState = STATE_JUST_STARTED
 		bot.sendMessage(user.id, "Игра началась", reply_markup = create_keyboard(['Где я?']))
 	else:
 		user.currentState = STATE_WAITING_INPUT_WEAPON
-		bot.sendMessage(user.id, "Выбери оружие", reply_markup = create_keyboard([[WEAPON_SWORD, WEAPON_BOW]], False))
+		bot.sendMessage(user.id, "Выбери стартовый класс", reply_markup = input_weapon_keyboard(user))
 
 def inventory_keyboard(user, itemId = 0):
 
@@ -401,7 +460,7 @@ def look_out(bot, update, user):
 	users = list(loc.getUsers())
 	if len(users) > 1:
 		text += '\nСписок игроков в локации:'
-		for u in users:
+		for u in [user for user in users if user.name != None]:
 			text += '\n '+u.name
 	else:
 		text += '\nКроме вас здесь никого нет'
@@ -557,7 +616,8 @@ def look_attributes_keyboard(user):
 
 	keyboard = [
 		[InlineKeyboardButton(''.join([' ' for i in range(0, int((20 - len(user.name))/2))]) + genderEmoji + ' ' + user.name + ''.join([' ' for i in range(0, int((20 - len(user.name))/2))]), callback_data = 'name'), InlineKeyboardButton('Уровень [ '+str(user.level)+' ]', callback_data = 'level'), InlineKeyboardButton(user.race.name, callback_data = 'race')],
-		[InlineKeyboardButton('HP: '+str(user.hp)+'/'+str(user.hpMax), callback_data = 'hp'), InlineKeyboardButton(line_bar(user.hp, 0, user.hpMax, '❤️', '_', 100//user.hpMax), callback_data = 'hp')]
+		[InlineKeyboardButton('HP: '+str(user.hp)+'/'+str(user.hpMax), callback_data = 'hp'), InlineKeyboardButton(line_bar(user.hp, 0, user.hpMax, '❤️', ' __ ', 5), callback_data = 'hp')],
+		[InlineKeyboardButton('MP: '+str(user.mp)+'/'+str(user.mpMax), callback_data = 'mp'), InlineKeyboardButton(line_bar(user.mp, 0, user.mpMax, '💙', ' __ ', 5), callback_data = 'mp')]
 	]
 	if user.level >= MAX_LEVEL:
 		keyboard.append([InlineKeyboardButton('Опыт: '+str(user.exp), callback_data = 'exp')])
@@ -569,16 +629,21 @@ def look_attributes_keyboard(user):
 		lookingMode = 1
 
 	if lookingMode == 1:
-		keyboard.append([InlineKeyboardButton(' Посмотреть [ Аттрибуты ] / Навыки ', callback_data = 'switch')])
+		keyboard.append([InlineKeyboardButton(' Посмотреть [ Аттрибуты ] / Навыки / Магия ', callback_data = 'switch')])
 
 		for attr in ATTRIBUTES_NAMES:
 			keyboard.append([InlineKeyboardButton(ATTRIBUTES_NAMES[attr], callback_data=attr), InlineKeyboardButton(str(user.getAttributeValue(attr)), callback_data=attr), InlineKeyboardButton(('Низкий', 'Средний', 'Высокий')[user.getAttributeValue(attr) // 7] , callback_data = attr)])
-	else:
-		keyboard.append([InlineKeyboardButton(' Посмотреть Аттрибуты / [ Навыки ] ', callback_data = 'switch')])
+	elif lookingMode == 2:
+		keyboard.append([InlineKeyboardButton(' Посмотреть Аттрибуты / [ Навыки ] / Магия ', callback_data = 'switch')])
 
 		for skill in SKILL_NAMES:
 			if user.getSkillValue(skill) > 0:
 				keyboard.append([InlineKeyboardButton(SKILL_NAMES[skill], callback_data=skill), InlineKeyboardButton(str(int(user.getSkillValue(skill))), callback_data=skill), InlineKeyboardButton(line_bar(user.getSkillValue(skill)*100, int(user.getSkillValue(skill))*100, int(user.getSkillValue(skill)+1)*100), callback_data=skill)])
+	else:
+		keyboard.append([InlineKeyboardButton(' Посмотреть Аттрибуты / Навыки / [ Магия ] ', callback_data = 'switch')])
+
+		for spell in user.spells:
+			keyboard.append([InlineKeyboardButton(spell.getName()+' (урон: '+str(spell.getDamage())+')', callback_data='spell:'+str(spell.protoId))])
 
 	if user.pointsLost > 0:
 		keyboard.append([InlineKeyboardButton('Улучшить характеристики [ '+str(user.pointsLost)+' ]', callback_data = 'upgrade-attributes')])
@@ -607,6 +672,8 @@ def button_looking_attributes(bot, update, user):
 
 		if lookingMode == 1:
 			newMode = 2
+		elif lookingMode == 2:
+			newMode = 3
 		else:
 			newMode = 1
 	
@@ -664,7 +731,7 @@ def attack_keyboard(user):
 		items = [item for item in user.items if item.itemId == 0 and not item.isWeapon()]
 	else:
 		keyboard = [[InlineKeyboardButton('Оружие / Предметы / [ Способности ]', callback_data = 'switch')]]
-		abilities = [load_ability(i) for i in user.getAbilities()]
+		abilities = user.getAbilities()
 
 	itemTypes = {}
 	i = 0
@@ -689,7 +756,7 @@ def attack_keyboard(user):
 		naturalAbilitiesRow = len(keyboard)
 		keyboard.append([])
 		for ability in abilities:
-			if (ability.isNatural()):
+			if (ability.isNatural(user)):
 				keyboard[naturalAbilitiesRow].append(InlineKeyboardButton(ability.name, callback_data = 'ability:'+str(ability.id)))
 			else:
 				keyboard.append([InlineKeyboardButton(ability.name, callback_data = 'ability:'+str(ability.id))])
@@ -719,7 +786,7 @@ def button_select_target_for_attack(bot, update, user):
 		bot.editMessageText(text = 'Вы напали на '+mob.getName(), chat_id=user.id, message_id=query.message.message_id)
 		mob = user.getAttackedMob()
 		if mob:
-			bot.sendMessage(user.id, user.name+' [HP:'+str(user.hp)+'/'+str(user.hpMax)+']\nВаш противник: '+mob.getName()+' [HP: '+str(mob.hp)+'/'+str(mob.hpMax)+']', reply_markup = attack_keyboard(user))
+			bot.sendMessage(user.id, user.name+' [HP:'+str(user.hp)+'/'+str(user.hpMax)+', MP: '+str(user.mp)+'/'+str(user.mpMax)+']\nВаш противник: '+mob.getName()+' [HP: '+str(mob.hp)+'/'+str(mob.hpMax)+', MP: '+str(mob.mp)+'/'+str(mob.mpMax)+']', reply_markup = attack_keyboard(user))
 		else:
 			user.currentState = user.prevState
 			return what_next(bot, user)
@@ -727,7 +794,7 @@ def button_select_target_for_attack(bot, update, user):
 def attack_menu(bot, update, user):
 	mob = user.getAttackedMob()
 	if mob:
-		bot.sendMessage(user.id, user.name+' [HP:'+str(user.hp)+'/'+str(user.hpMax)+']\nВаш противник: '+mob.getName()+' [HP: '+str(mob.hp)+'/'+str(mob.hpMax)+']. Что вы используете?', reply_markup = attack_keyboard(user))
+		bot.sendMessage(user.id, user.name+' [HP:'+str(user.hp)+'/'+str(user.hpMax)+', MP: '+str(user.mp)+'/'+str(user.mpMax)+']\nВаш противник: '+mob.getName()+' [HP: '+str(mob.hp)+'/'+str(mob.hpMax)+', MP: '+str(mob.mp)+'/'+str(mob.mpMax)+']. Что вы используете?', reply_markup = attack_keyboard(user))
 	else:
 		user.currentState = user.prevState
 		return what_next(bot, user)
@@ -803,6 +870,9 @@ def make_weapon_action(bot, user, mob, item, method):
 
 def make_ability_action(bot, user, mob, ability):
 
+	if not ability.isCanAttack(user):
+		return 'Вы не можете использовать способность '+ability.name
+
 	attr = ability.usingAttribute
 	attrValue = user.getAttributeValue(attr)
 
@@ -867,7 +937,7 @@ def make_ability_action(bot, user, mob, ability):
 
 def make_mob_attack(bot, user, mob):
 
-	abilities = [load_ability(i) for i in mob.getAbilities()]
+	abilities = mob.getAbilities()
 	items = [Item.get(i) for i in mob.items]
 
 	text = []
@@ -876,9 +946,10 @@ def make_mob_attack(bot, user, mob):
 	bestAbility = (0, 0)
 	i = 0
 	for ability in abilities:
-		dmg = ability.getDamage(mob)
-		if dmg > bestAbility[1]:
-			bestAbility = (i, dmg)
+		if ability.isCanAttack(mob):
+			dmg = ability.getDamage(mob)
+			if dmg > bestAbility[1]:
+				bestAbility = (i, dmg)
 		i += 1
 
 	# @TODO: добавить использование предметов
@@ -984,7 +1055,7 @@ def button_battle(bot, update, user):
 			text += '\n\n'+make_mob_attack(bot, user, mob)
 			bot.sendMessage(user.id, text, reply_markup = create_keyboard())
 			if user.hp > 0:
-				bot.sendMessage(user.id, user.name+' [HP:'+str(user.hp)+'/'+str(user.hpMax)+']\nВаш противник: '+mob.getName()+' [HP: '+str(mob.hp)+'/'+str(mob.hpMax)+']. Что вы используете?', reply_markup = attack_keyboard(user))
+				bot.sendMessage(user.id, user.name+' [HP:'+str(user.hp)+'/'+str(user.hpMax)+', MP: '+str(user.mp)+'/'+str(user.mpMax)+']\nВаш противник: '+mob.getName()+' [HP: '+str(mob.hp)+'/'+str(mob.hpMax)+', MP: '+str(mob.mp)+'/'+str(mob.mpMax)+']. Что вы используете?', reply_markup = attack_keyboard(user))
 			else:
 				bot.sendMessage(user.id, 'Хаха, лузер', reply_markup = create_keyboard([ACTION_RESTART]))
 		else:
@@ -1000,7 +1071,7 @@ def button_battle(bot, update, user):
 			text += '\n\n'+make_mob_attack(bot, user, mob)
 			bot.sendMessage(user.id, text, reply_markup = create_keyboard())
 			if user.hp > 0:
-				bot.sendMessage(user.id, user.name+' [HP:'+str(user.hp)+'/'+str(user.hpMax)+']\nВаш противник: '+mob.getName()+' [HP: '+str(mob.hp)+'/'+str(mob.hpMax)+']. Что вы используете?', reply_markup = attack_keyboard(user))
+				bot.sendMessage(user.id, user.name+' [HP:'+str(user.hp)+'/'+str(user.hpMax)+', MP: '+str(user.mp)+'/'+str(user.mpMax)+']\nВаш противник: '+mob.getName()+' [HP: '+str(mob.hp)+'/'+str(mob.hpMax)+', MP: '+str(mob.mp)+'/'+str(mob.mpMax)+']. Что вы используете?', reply_markup = attack_keyboard(user))
 			else:
 				bot.sendMessage(user.id, 'Хаха, лузер', reply_markup = create_keyboard([ACTION_RESTART]))
 		else:
@@ -1148,6 +1219,15 @@ def upgrade_attributes_keyboard(user):
 		if get_session_data(user.id, 'upgradeHPmax') <= user.hpMax:
 			row[1] = InlineKeyboardButton(BLOCKED, callback_data='hpMax')
 		keyboard.append(row)
+		row = [ 
+			InlineKeyboardButton('Макс. MP', callback_data='mpMax'),
+			InlineKeyboardButton(MINUS, callback_data='mpMax-'),
+			InlineKeyboardButton(str(get_session_data(user.id, 'upgradeMPmax')), callback_data='mpMax'),
+			InlineKeyboardButton(PLUS, callback_data='mpMax+')
+		]
+		if get_session_data(user.id, 'upgradeMPmax') <= user.mpMax:
+			row[1] = InlineKeyboardButton(BLOCKED, callback_data='mpMax')
+		keyboard.append(row)
 
 	else:
 		keyboard.append([InlineKeyboardButton(' Переключить Аттрибуты / [ Навыки ] ', callback_data = 'switch')])
@@ -1179,6 +1259,7 @@ def upgrade_attributes(bot, update, user):
 
 	set_session_data(user.id, 'upgradePointsLost', user.pointsLost)
 	set_session_data(user.id, 'upgradeHPmax', user.hpMax)
+	set_session_data(user.id, 'upgradeMPmax', user.mpMax)
 	for attr in ATTRIBUTES_NAMES:
 		set_session_data(user.id, 'upgrade'+attr, user.getAttributeValue(attr))
 	for skill in SKILL_NAMES:
@@ -1192,6 +1273,7 @@ def button_upgrade_attributes(bot, update, user):
 
 	p = get_session_data(user.id, 'upgradePointsLost')
 	hpMax = get_session_data(user.id, 'upgradeHPmax')
+	mpMax = get_session_data(user.id, 'upgradeMPmax')
 	
 	attributes = {}
 	for attr in ATTRIBUTES_NAMES:
@@ -1204,11 +1286,14 @@ def button_upgrade_attributes(bot, update, user):
 	if command == 'done':
 		user.pointsLost = p
 		user.hpMax = hpMax
+		user.mpMax = mpMax
 
 		for attr in attributes:
-			user.setAttributeValue(attr, attributes[attr])
+			if user.getAttributeValue(attr) < attributes[attr]:
+				user.setAttributeValue(attr, attributes[attr])
 		for skill in skills:
-			user.setSkillValue(skill, skills[skill])
+			if user.getSkillValue(skill) < skills[skill]:
+				user.setSkillValue(skill, skills[skill])
 
 		user.currentState = user.prevState
 		bot.editMessageText(chat_id = user.id, message_id = query.message.message_id, text = 'Вы изменили свои аттрибуты')
@@ -1232,6 +1317,8 @@ def button_upgrade_attributes(bot, update, user):
 		param = command[:-1:]
 		if param == 'hpMax':
 			set_session_data(user.id, 'upgradeHPmax', hpMax+1)
+		elif param == 'mpMax':
+			set_session_data(user.id, 'upgradeMPmax', mpMax+1)
 		elif param in skills:
 			set_session_data(user.id, 'upgrade'+param, skills[param]+1)
 		elif param in attributes:
@@ -1243,6 +1330,8 @@ def button_upgrade_attributes(bot, update, user):
 		param = command[:-1:]
 		if param == 'hpMax':
 			set_session_data(user.id, 'upgradeHPmax', hpMax-1)
+		elif param == 'mpMax':
+			set_session_data(user.id, 'upgradeMPmax', mpMax-1)
 		elif param in skills:
 			set_session_data(user.id, 'upgrade'+param, skills[param]-1)
 		elif param in attributes:
